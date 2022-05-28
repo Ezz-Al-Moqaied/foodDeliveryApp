@@ -68,31 +68,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-/*
-getAllFood() async {
-  FoodModel foods;
-  await FirebaseFirestore.instance
-      .collection('foods')
-      .get()
-      .then((QuerySnapshot querySnapshot) {
-    querySnapshot.docs.forEach((food) {
-      foods = FoodModel(
-          id: food["id"],
-          name: food["name"],
-          image: food["image"],
-          price: food["price"],
-          favorite: food["favorite"],
-          description: food["description"]);
-      list_food.add(foods);
-      print(list_food.toString());
-      print("aa ${list_food.length}");
-    });
-  }).catchError((error) => print("Failed to add user: $error"));
-}
-*/
-/*getAllUsersFromFirestore() async {
-  QuerySnapshot<Map<String, dynamic>> data =
-  await FirebaseFirestore.instance.collection('foods').get();
-  dataDetails = data.docs.map((e) => e.data()).toList();
-}*/
-
