@@ -1,63 +1,37 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fooddeliveryapp/model/FoodModel.dart';
+import 'package:fooddeliveryapp/model/UserModel.dart';
+import 'package:fooddeliveryapp/screens/home_screen.dart';
 import 'package:fooddeliveryapp/widgets/item_food.dart';
 import 'package:fooddeliveryapp/widgets/text_field.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class MenuScreen extends StatelessWidget {
+List<FoodModel> list_food = [];
+FirebaseFirestore firestore = FirebaseFirestore.instance;
+late String id_user;
+late String username;
+
+class MenuScreen extends StatefulWidget {
+  String username;
+
+  MenuScreen({Key? key, required this.username}) : super(key: key);
+
+  @override
+  State<MenuScreen> createState() => _MenuScreenState(username);
+}
+
+class _MenuScreenState extends State<MenuScreen> {
   var SearchController = TextEditingController();
+  String username;
 
-  MenuScreen({Key? key}) : super(key: key);
+  _MenuScreenState(this.username);
 
-  List<FoodModel> menu = [
-    FoodModel(
-        name: "Cheeseburger",
-        price: 10.0,
-        description: "Cheese burger ... ",
-        image: "images/Cheeseburger.jpg",
-        favorite: true),
-    FoodModel(
-        name: "Fillet steak",
-        price: 19.0,
-        description: "Fillet steak ... ",
-        image: "images/Filletsteak.jpg",
-        favorite: true),
-    FoodModel(
-        name: "Chicken",
-        price: 20.5,
-        description: "Chicken ... ",
-        image: "images/Chicken.jpg",
-        favorite: true),
-    FoodModel(
-        name: "Fried fish",
-        price: 30.0,
-        description: "Fried fish ... ",
-        image: "images/Friedfish.jpg",
-        favorite: false),
-    FoodModel(
-        name: "Pizza",
-        price: 11.0,
-        description: "Pizza ... ",
-        image: "images/Pizza.jpg",
-        favorite: true),
-    FoodModel(
-        name: "Orange Juice",
-        price: 5.0,
-        description: "Orange Juice ... ",
-        image: "images/OrangeJuice.jpg",
-        favorite: true),
-    FoodModel(
-        name: "Soda",
-        price: 4.5,
-        description: "Soda All kinds of foods ... ",
-        image: "images/Soda.jpg",
-        favorite: true),
-    FoodModel(
-        name: "Chocolate pie",
-        price: 8.0,
-        description: "Chocolate pie ... ",
-        image: "images/Chocolatepie.jpg",
-        favorite: false),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,18 +70,16 @@ class MenuScreen extends StatelessWidget {
                       fontSize: 25,
                     ),
                   ),
-                  const Text(
-                    "Ezz .. ",
-                    style: TextStyle(
+                  Text(
+                    "$username .. ",
+                    style: const TextStyle(
                         fontSize: 25,
                         color: Colors.deepOrangeAccent,
                         fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () {
-                      // Log out the account
-                    },
+                    onTap: () {},
                     child: Container(
                       color: Colors.deepOrangeAccent,
                       padding: const EdgeInsets.all(5),
@@ -123,27 +95,45 @@ class MenuScreen extends StatelessWidget {
             ),
             const SizedBox(height: 5),
             Container(
-              margin: const EdgeInsets.all(15),
-              child: defaultTextField(
-                  controller: SearchController,
-                  label: "Search food",
-                  prefixIcon: Icons.search),
+              margin: EdgeInsets.all(15),
+              child: TextFormField(
+                controller: SearchController,
+                decoration: const InputDecoration(
+                  label: Text("Search food"),
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                  ),
+                ),
+                onEditingComplete: () {
+                  print(SearchController.text);
+                },
+              ),
             ),
             const SizedBox(height: 8),
             Expanded(
-              child: ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  itemBuilder: (context, index) {
-                    return defaultItemFood(
-                        foodmodel: menu[index],
-                    context: context);
-                  },
-                  separatorBuilder: (context, index) {
-                    return const SizedBox(
-                      height: 18,
-                    );
-                  },
-                  itemCount: menu.length),
+              child: FutureBuilder(
+                builder: (context, projectSnap) {
+                  if (projectSnap.connectionState == ConnectionState.none &&
+                      projectSnap.hasData == null) {
+                    //print('project snapshot data is: ${projectSnap.data}');
+                    return Container();
+                  }
+                  return ListView.separated(
+                      physics: const BouncingScrollPhysics(),
+                      itemBuilder: (context, index) {
+                        return defaultItemFood(
+                            foodmodel: list_food[index], context: context);
+                      },
+                      separatorBuilder: (context, index) {
+                        return const SizedBox(
+                          height: 18,
+                        );
+                      },
+                      itemCount: list_food.length);
+                },
+                future: getAllFood(),
+              ),
             ),
             const SizedBox(height: 20)
           ],
@@ -151,4 +141,21 @@ class MenuScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+getAllFood() async {
+  FoodModel foods;
+  list_food.clear();
+  await firestore.collection('foods').get().then((QuerySnapshot querySnapshot) {
+    querySnapshot.docs.forEach((food) {
+      foods = FoodModel(
+          id: food["id"],
+          name: food["name"],
+          image: food["image"],
+          price: food["price"],
+          favorite: food["favorite"],
+          description: food["description"]);
+      list_food.add(foods);
+    });
+  }).catchError((error) => print("Failed to get foods : $error"));
 }

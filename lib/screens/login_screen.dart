@@ -1,12 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fooddeliveryapp/model/UserModel.dart';
 import 'package:fooddeliveryapp/screens/home_screen.dart';
 import 'package:fooddeliveryapp/screens/sign_up_screen.dart';
 import 'package:fooddeliveryapp/widgets/text_field.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+var emailController = TextEditingController();
+var passwordController = TextEditingController();
+late UserModel users;
+late String ID_users;
 
 class LoginScreen extends StatelessWidget {
-  var emailController = TextEditingController();
-  var passwordController = TextEditingController();
-
   LoginScreen({Key? key}) : super(key: key);
 
   @override
@@ -51,7 +56,7 @@ class LoginScreen extends StatelessWidget {
                     borderRadius: BorderRadius.all(Radius.circular(20))),
                 child: MaterialButton(
                   onPressed: () {
-                    navigateNext(context, HomeScreen());
+                    getUser(context);
                   },
                   child: const Text(
                     "Login",
@@ -74,7 +79,7 @@ class LoginScreen extends StatelessWidget {
               const Spacer(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children:  [
+                children: [
                   const Text(
                     "Don't have an Account ? ",
                     style: TextStyle(
@@ -94,7 +99,7 @@ class LoginScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onTap: (){
+                    onTap: () {
                       print("sign up");
                       navigateNext(context, SignUpScreen());
                     },
@@ -111,3 +116,28 @@ class LoginScreen extends StatelessWidget {
 
 void navigateNext(context, widget) => Navigator.pushAndRemoveUntil(
     context, MaterialPageRoute(builder: (context) => widget), (route) => false);
+
+Future<UserModel> getUser(context) async {
+  FirebaseFirestore.instance
+      .collection('users')
+      .get()
+      .then((QuerySnapshot querySnapshot) {
+    querySnapshot.docs.forEach((user) {
+      if (user["email"] == emailController.text &&
+          user["password"] == passwordController.text) {
+        users = UserModel(
+            name: user["name"],
+            email: user["email"],
+            phone: user["phone"],
+            address: user["address"],
+            password: user["password"],
+            confirmpassword: user["password"],
+            favorites: user["favorites"]);
+        navigateNext(context, HomeScreen(users: users));
+      } else {}
+    });
+  }).catchError((error) => print("Failed to add user: $error"));
+  return users;
+}
+
+
